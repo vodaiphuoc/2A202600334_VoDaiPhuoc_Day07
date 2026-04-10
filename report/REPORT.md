@@ -1,8 +1,8 @@
 # Báo Cáo Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
-**Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Họ tên:** [Võ Đại Phước]
+**Nhóm:** [C401 - X5]
+**Ngày:** [10/4/2026]
 
 ---
 
@@ -11,10 +11,10 @@
 ### Cosine Similarity (Ex 1.1)
 
 **High cosine similarity nghĩa là gì?**
-> *Viết 1-2 câu:*
+> 2 vector trong không gian đa chiều có góc càng bé (cosine tiến về 1.0)
 
 **Ví dụ HIGH similarity:**
-- Sentence A:
+- Sentence A: 
 - Sentence B:
 - Tại sao tương đồng:
 
@@ -24,27 +24,32 @@
 - Tại sao khác:
 
 **Tại sao cosine similarity được ưu tiên hơn Euclidean distance cho text embeddings?**
-> *Viết 1-2 câu:*
+> Cosine chỉ phụ thuộc vào góc giữa 2 vector, trong khi Euclidean distance phụ thuộc vào 
+> độ lớn chiều dài của vector
+> giúp tính toán trở nên ổn định hơn
+> giống như trong bài toán Face recognition
 
 ### Chunking Math (Ex 1.2)
 
 **Document 10,000 ký tự, chunk_size=500, overlap=50. Bao nhiêu chunks?**
-> *Trình bày phép tính:*
-> *Đáp án:*
+> Lấy 500*N - 50*(N-1) + x = 10k (N chunk thì có N-1 đoạn overlap)
+> => 450N + x = 10k-50, lấy (10k-50)/450 làm tròn xuống rồi cộng 1
+> Đáp án: 23 
 
 **Nếu overlap tăng lên 100, chunk count thay đổi thế nào? Tại sao muốn overlap nhiều hơn?**
-> *Viết 1-2 câu:*
-
+> 500*N - 100*(N-1) + x = 10k => round_down((10k-100)/(500-100)) + 1 => 25 chunk
+> overlap nhiều lên thì các chunk trở nên gần nhau hơn trong không gian nhiều chiều
+> dẫn đến khi truy vấn sẽ chính xác hơn
 ---
 
 ## 2. Document Selection — Nhóm (10 điểm)
 
 ### Domain & Lý Do Chọn
 
-**Domain:** [ví dụ: Customer support FAQ, Vietnamese law, cooking recipes, ...]
+**Domain:** Giáo dục, cụ thể VinUni policy
 
 **Tại sao nhóm chọn domain này?**
-> *Viết 2-3 câu:*
+> Tài liệu thực tế, gần gũi với chương trình đang học
 
 ### Data Inventory
 
@@ -119,18 +124,27 @@ Giải thích cách tiếp cận của bạn khi implement các phần chính tr
 ### Chunking Functions
 
 **`SentenceChunker.chunk`** — approach:
-> *Viết 2-3 câu: dùng regex gì để detect sentence? Xử lý edge case nào?*
+> regex: re.split(r'(?<=[.!?]) +'
+> bắt dấu chấm có khoảng trắng phía sau
 
 **`RecursiveChunker.chunk` / `_split`** — approach:
-> *Viết 2-3 câu: algorithm hoạt động thế nào? Base case là gì?*
+> chunk với seperator tại index 0 trước, chunk nào lớn hơn chunk_size thì dùng
+> seperator tiếp theo để chunk và cứ tiếp tục quá trình
 
 ### EmbeddingStore
 
 **`add_documents` + `search`** — approach:
-> *Viết 2-3 câu: lưu trữ thế nào? Tính similarity ra sao?*
+> `add_documents`: đầu tiên phải `_make_record`, mỗi document bao gồm original content, embedding 
+> được tạo từ embedding_model, add thêm metadata, id khi được thêm vào collection thì
+> lấy số lượng document hiện tại trong collection cộng dần lên
+> `search`: tạo embedding cho câu query, sau đó dùng method query của collection để
+> try vấn sau sort score theo thứ tự giảm dần, tìm với công thức cosine đã được config 
+> trước khi khởi tạo collection, 
+> xem thêm tại [EmbeddingStore.__init__](../src/store.py) method
 
 **`search_with_filter` + `delete_document`** — approach:
-> *Viết 2-3 câu: filter trước hay sau? Delete bằng cách nào?*
+> `search_with_filter`: dùng argument `where` trong method query của collection để thêm match với metadata
+> `delete_document`: xóa 1 document phải xóa theo doc_id
 
 ### KnowledgeBaseAgent
 
@@ -139,11 +153,12 @@ Giải thích cách tiếp cận của bạn khi implement các phần chính tr
 
 ### Test Results
 
-```
-# Paste output of: pytest tests/ -v
+```terminal
+export OPENAI_API_KEY=your_openai_api_key 
+pytest ./tests/test_solution.py -v >> ./report/pytest_results.txt
 ```
 
-**Số tests pass:** __ / __
+**Số tests pass:** 42 / 42
 
 ---
 

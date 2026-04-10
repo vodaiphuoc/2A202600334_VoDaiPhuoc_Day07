@@ -58,4 +58,4 @@ class OpenAIEmbedder:
         return [float(value) for value in response.data[0].embedding]
 
 
-_mock_embed = MockEmbedder()
+_mock_embed = OpenAIEmbedder()

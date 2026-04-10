@@ -21,93 +21,30 @@ from src.models import Document
 from src.store import EmbeddingStore
 from src.chunking import SentenceChunker
 
-MAX_SENTENCES_PER_CHUNK = 5
+MAX_SENTENCES_PER_CHUNK = 16
 
 
 BENCHMARK_QUERIES = [
     {
         "id": "1",
-        "query": "Làm sao để có thể học cùng lúc hai chương trình",
-        "gold_answer": """2. Điều kiện để học cùng lúc hai chương trình
-a) Ngành đào tạo chính ở chương trình thứ hai phải khác với ngành đào tạo chính
-ở chương trình thứ nhất.
-b) Sinh viên được đăng ký học chương trình thứ hai sớm nhất khi đã được xếp
-trình độ năm thứ hai của chương trình thứ nhất.
-c) Tại thời điểm đăng ký, sinh viên phải đáp ứng (i) học lực tính theo điểm trung
-bình tích lũy xếp loại khá trở lên (CGPA=2.5 trở lên); (ii) tiêu chí xét đầu vào của
-chương trình thứ hai trong năm tuyển sinh; và (iii) không đang trong thời gian bị kỷ luật
-tương đương ở mức cảnh cáo trở lên.
-d) Trong quá trình sinh viên học cùng lúc hai chương trình, nếu điểm trung bình
-tích luỹ của chương trình thứ nhất đạt dưới điểm trung bình hoặc thuộc diện cảnh báo
-kết quả học tập thì phải dừng học chương trình thứ hai ở học kỳ tiếp theo; sinh viên sẽ
-bị loại khỏi danh sách đã đăng ký học chương trình thứ hai.
-e) Sinh viên có nguyện vọng học cùng lúc hai chương trình cần đăng ký chương
-trình thứ hai tối thiểu 2 năm trước thời hạn dự kiến tốt nghiệp của chương trình thứ hai."""
+        "query": "Mã số của Quy chế đào tạo VinUni là gì?",
+        "gold_answer": """VU_HT03.VN"""
     },{
         "id": "2",
-        "query": "Có khi nào hệ thống retrieval bị sai không?",
-        "gold_answer": """Trong thực tế, retrieval không phải lúc nào cũng đúng. Một số lỗi thường gặp là tài liệu cũ vẫn xếp hạng cao, từ khóa trong câu hỏi không khớp với cách diễn đạt trong tài liệu, hoặc embedding model chưa xử lý tốt nội dung song ngữ. Vì vậy, đội ngũ phát triển nên kiểm thử bằng các truy vấn thực tế, xem trực tiếp các chunk được trả về, và ghi nhận failure cases để cải thiện dữ liệu cũng như chiến lược truy xuất."""
+        "query": "Tổng số tín chỉ tối thiểu cần đăng ký một kỳ?",
+        "gold_answer": """12 tín chỉ đối với sinh viên hệ chính quy"""
     },{
         "id": "3",
-        "query": "khi nào sinh viên được công nhận tốt nghiệp?",
-        "gold_answer": """Điều 28. Công nhận tốt nghiệp
-1. Sinh viên phải đăng ký tốt nghiệp trong học kỳ tốt nghiệp dự kiến theo các thủ
-tục và hướng dẫn của Nhà trường.
-2. Sinh viên đã đăng ký tốt nghiệp nhưng không hoàn thành tất cả các yêu cầu
-đào tạo vào cuối học kỳ/kỳ tốt nghiệp dự kiến phải đăng ký lại để tốt nghiệp.
-3. Sinh viên sau khi hoàn thành chương trình đào tạo được xét và công nhận tốt
-nghiệp phải đáp ứng đủ các điều kiện sau:
-a) Tích lũy đủ số học phần, khối lượng của chương trình đào tạo trong thời gian
-đào tạo quy định của mỗi chương trình đào tạo;
-b) Hoàn thành các yêu cầu về Giáo dục đại cương và năng lực tiếng Anh;
-c) Hoàn thành các yêu cầu đối với chuyên ngành do các Viện đào tạo quy định;
-d) Hoàn thành các học phần bắt buộc đang bị điểm “I - Chưa hoàn thành” trong
-bảng điểm;
-e) Điểm trung bình tích lũy của toàn khóa học đạt tối thiểu từ 2,00/4,00 trở lên;
-f) Cho đến thời điểm xét tốt nghiệp không bị truy cứu trách nhiệm hình sự;
-g) Hoàn thành nghĩa vụ khác của sinh viên theo quy định của Nhà trường;
-4. Căn cứ đề nghị của Hội đồng xét tốt nghiệp, Hiệu trưởng ký quyết định công
-nhận tốt nghiệp cho các sinh viên đủ điều kiện theo quy định.
-Hội đồng xét tốt nghiệp do Hiệu trưởng hoặc người được Hiệu trưởng uỷ quyền
-làm Chủ tịch, Trưởng phòng Quản lý đào tạo làm Thư ký và các thành viên khác bao
-gồm lãnh đạo các đơn vị chuyên môn và Trưởng phòng Phòng Công tác sinh viên."""
+        "query": "GPA bao nhiêu thì được xếp loại học lực Giỏi?",
+        "gold_answer": """Từ 3.20 đến 3.59 """
     },{
         "id": "4",
-        "query": "xếp hạng học lực tại VinUni",
-        "gold_answer": """2. Sau mỗi học kỳ, căn cứ vào điểm trung bình tích lũy, sinh viên được xếp hạng
-về học lực như sau:
-Xếp hạng học lực Xuất sắc 3,60 – 4,00
-Sinh viên năm thứ 6 Điểm trung bình tích lũy
-Giỏi Khá 3,20 – 3,59
-2,50 – 3,19
-Trung bình 2,00 – 2,49
-Yếu Dưới 2,00"""
+        "query": "Một tín chỉ tương đương bao nhiêu giờ học?",
+        "gold_answer": """50 giờ học định mức"""
     },{
         "id": "5",
-        "query": "Làm thế nào để  bảo lưu kết quả?",
-        "gold_answer": """Điều 15. Nghỉ học tạm thời hoặc nghỉ ốm
-1. Sinh viên muốn xin nghỉ học tạm thời hoặc bảo lưu kết quả đã học có thể gửi
-yêu cầu cho Viện trưởng. Sinh viên có thể được nghỉ từ một đến hai học kỳ tùy từng
-trường hợp. Sau khi kết thúc thời gian bảo lưu, sinh viên phải liên hệ nhà trường để xin
-gia hạn trong trường hợp muốn kéo dài thời gian bảo lưu.
-2. Sinh viên được xin nghỉ học tạm thời và bảo lưu kết quả học tập trong các
-trường hợp sau:
-a) Được điều động vào các lực lượng vũ trang (cần có thư xác thực);
-16
-b) Được cấp có Thẩm quyền cử đại diện cho Quốc gia tham gia các cuộc thi, giải
-đấu quốc tế;
-c) Bị ốm hoặc cấp cứu y tế phải điều trị thời gian dài, nhưng phải có giấy xác
-nhận của cơ quan y tế. Các giấy tờ trên đều phải được dịch công chứng sang tiếng Anh.
-d) Vì lý do cá nhân hoặc gia cảnh khó khăn. Trường hợp này, sinh viên phải học
-ít nhất một học kỳ ở trường, không rơi vào các trường hợp bị buộc thôi học quy định tại
-Điều 15 của Quy chế này . Thời gian nghỉ học tạm thời vì nhu cầu cá nhân phải được
-tính vào thời gian học chính thức tại trường.
-3. Đơn xin nghỉ học tạm thời/thôi học cho kỳ học sắp tới sẽ có hiệu lực từ ngày
-cuối cùng của học kỳ đang học. Đơn xin nghỉ học tạm thời học kỳ đang học sẽ có hiệu
-lực kể từ ngày nộp đơn.
-4. Để bảo lưu kết quả học, sinh viên phải chuẩn bị đơn cũng như các giấy tờ minh
-chứng cần thiết và được sự cho phép của cố vấn học tập. Sau khi có kết quả cuối cùng,
-Phòng Quản lý Đào tạo sẽ xem xét các yêu cầu với Viện và thông báo cho sinh viên."""
+        "query": "Thời gian bảo lưu kết quả học tập tối đa?",
+        "gold_answer": """ Từ một đến hai học kỳ"""
     }
 
 ]
@@ -213,14 +150,27 @@ def main():
     print(f"\nStored {store.get_collection_size()} documents in EmbeddingStore")
     print("\n=== EmbeddingStore Search Benchmark ===")
     
-    
-    print(f"Query: {query}")
-    search_results = store.search(query, top_k=5)
-    for index, result in enumerate(search_results, start=1):
-        print(f"{index}. score={result['score']:.3f} source={result['metadata'].get('source')}")
-        print(f"   content preview: {result['content'][:120].replace(chr(10), ' ')}...")
-
-    
+    inputs = """| # | Query | Gold Answer |
+|---|-------|-------------|
+"""
+    outputs = """| # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
+|---|-------|--------------------------------|-------|-----------|------------------------|
+"""
+    for case in BENCHMARK_QUERIES:
+        _id = case['id']
+        query = case['query']
+        gold_answer = case['gold_answer'].replace('\n','<br>')
+        search_results = store.search(query, top_k=1)
+        
+        result = search_results[0]
+        inputs += f"|{_id}|{query}|{gold_answer}|\n"
+        summary_content = result['content'][:150].replace('\n','<br>')
+        outputs += f"|{_id}|{query}|{summary_content}|{result['score']:.3f}|||\n"
+            
+    with open("report/Benchmark.md", "w") as fp:
+        fp.write(inputs)
+    with open("report/Benchmark_results.md", "w") as fp:
+        fp.write(outputs)
     return 0
 
 if __name__ == "__main__":

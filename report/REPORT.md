@@ -55,18 +55,21 @@
 
 | # | Tên tài liệu | Nguồn | Số ký tự | Metadata đã gán |
 |---|--------------|-------|----------|-----------------|
-| 1 | | | | |
+| 1 | QUY CHẾ ĐÀO TẠO ĐẠI HỌC HỆ CHÍNH QUY THEO HỆ THỐNG TÍN CHỈ | https://policy.vinuni.edu.vn/wp-content/uploads/2024/05/VU_HT03.VN_QC-dao-tao-dai-hoc-he-chinh-quy-theo-he-thong-tin-chi.pdf | 73.854 | "chunk_id", "source" , "extension"|
 | 2 | | | | |
 | 3 | | | | |
 | 4 | | | | |
 | 5 | | | | |
 
+
 ### Metadata Schema
+
 
 | Trường metadata | Kiểu | Ví dụ giá trị | Tại sao hữu ích cho retrieval? |
 |----------------|------|---------------|-------------------------------|
-| | | | |
-| | | | |
+| chunk_id | Integer | 2 | thứ tự chunk trong file tổng đầu vào |
+| source | String | url/local path của file để xử lý | Dùng để trích dẫn nguồn (citation) |
+| extension | String | pdf | Giúp hệ thống quản lý loại tệp tin và áp dụng các phương pháp xử lý văn bản (OCR hoặc Text Extraction) phù hợp cho từng định dạng. |
 
 ---
 
@@ -78,23 +81,45 @@ Chạy `ChunkingStrategyComparator().compare()` trên 2-3 tài liệu:
 
 | Tài liệu | Strategy | Chunk Count | Avg Length | Preserves Context? |
 |-----------|----------|-------------|------------|-------------------|
-| | FixedSizeChunker (`fixed_size`) | | | |
-| | SentenceChunker (`by_sentences`) | | | |
-| | RecursiveChunker (`recursive`) | | | |
+| | FixedSizeChunker (`fixed_size`) | 493 | 199.70 | no |
+| | SentenceChunker (`by_sentences`) | 138 |532.19 | yes|
+| | RecursiveChunker (`recursive`) | 452 | 162.39 | no|
 
 ### Strategy Của Tôi
 
-**Loại:** [FixedSizeChunker / SentenceChunker / RecursiveChunker / custom strategy]
+**Loại:** SentenceChunker
 
 **Mô tả cách hoạt động:**
-> *Viết 3-4 câu: strategy chunk thế nào? Dựa trên dấu hiệu gì?*
+> tách câu dựa trên '. ' pattern
 
 **Tại sao tôi chọn strategy này cho domain nhóm?**
-> *Viết 2-3 câu: domain có pattern gì mà strategy khai thác?*
+> nhanh, gọn, dễ kiểm soát size
 
 **Code snippet (nếu custom):**
 ```python
-# Paste implementation here
+class SentenceChunker:
+    """
+    Split text into chunks of at most max_sentences_per_chunk sentences.
+
+    Sentence detection: split on ". ", "! ", "? " or ".\n".
+    Strip extra whitespace from each chunk.
+    """
+
+    def __init__(self, max_sentences_per_chunk: int = 3) -> None:
+        self.max_sentences_per_chunk = max(1, max_sentences_per_chunk)
+
+    def chunk(self, text: str) -> list[str]:
+        # TODO: split into sentences, group into chunks
+        sents: list[str] = [ele.strip() for ele in re.split(r'(?<=[.!?]) +', text)]
+
+        chunk_of_sents: list[list[str]] = [
+            sents[i:i+self.max_sentences_per_chunk] 
+            if i+self.max_sentences_per_chunk < len(sents) 
+            else sents[i:]
+            for i in range(0, len(sents), self.max_sentences_per_chunk)
+        ]
+        
+        return ["".join(ele) for ele in chunk_of_sents]
 ```
 
 ### So Sánh: Strategy của tôi vs Baseline
@@ -185,49 +210,48 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 
 | # | Query | Gold Answer |
 |---|-------|-------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
+| 1 | Mã số của Quy chế đào tạo VinUni là gì? | VU_HT03.VN |
+| 2 | Tổng số tín chỉ tối thiểu cần đăng ký một kỳ? | 12 tín chỉ đối với sinh viên hệ chính quy |
+| 3 | GPA bao nhiêu thì được xếp loại học lực Giỏi? | Từ 3.20 đến 3.59 |
+| 4 | Một tín chỉ tương đương bao nhiêu giờ học? | 50 giờ học định mức |
+| 5 | Thời gian bảo lưu kết quả học tập tối đa? | Từ một đến hai học kỳ |
 
 ### Kết Quả Của Tôi
-
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+|1|Mã số của Quy chế đào tạo VinUni là gì?|Liêm chính trong học thuật là một phần quan trọng của giáo dục đại học để<br>sinh viên học hỏi, trải nghiệm và áp dụng các tiêu chuẩn đạo đức cao nhất.Tạ|0.471|no||
+|2|Tổng số tín chỉ tối thiểu cần đăng ký một kỳ?|Đăng ký học phần<br>1.Vào đầu năm học, Phòng Quản lý Đào tạo sẽ công bố lịch học dự kiến của<br>từng chương trình, danh sách các học phần bắt buộc và tự chọ|0.540|yes||
+|3|GPA bao nhiêu thì được xếp loại học lực Giỏi?|Điều kiện cụ thể theo chính sách của Nhà trường và của từng Viện/Khoa có liên<br>quan.<br>d) Điểm đạt yêu cầu/không đạt yêu cầu (S/U): Mục đích để khuyến kh|0.523|yes||
+|4|Một tín chỉ tương đương bao nhiêu giờ học?|Một<br>tín chỉ được tính tương đương với 50 giờ học định mức của sinh viên, bao gồm giờ học<br>được giảng dạy (giờ học lý thuyết), giờ học có hướng dẫn, tự |0.476|no||
+|5|Thời gian bảo lưu kết quả học tập tối đa?|.Điểm<br>của học phần cũ sẽ không tính vào điểm GPA.<br>Điều 15.Nghỉ học tạm thời hoặc nghỉ ốm<br>1.Sinh viên muốn xin nghỉ học tạm thời hoặc bảo lưu kết quả đ|0.422|yes||
 
-**Bao nhiêu queries trả về chunk relevant trong top-3?** __ / 5
+
+**Bao nhiêu queries trả về chunk relevant trong top-3?** 3 / 5
 
 ---
 
 ## 7. What I Learned (5 điểm — Demo)
 
 **Điều hay nhất tôi học được từ thành viên khác trong nhóm:**
-> *Viết 2-3 câu:*
+> Có các cách implement code khác nhau
 
 **Điều hay nhất tôi học được từ nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
+> yêu cầu phải chọn chung đề tài, chung câu query mới so sánh với nhau được
 
 **Nếu làm lại, tôi sẽ thay đổi gì trong data strategy?**
-> *Viết 2-3 câu:*
-
+> thêm nhiều file txt hơn, các file txt gần giống nội dung để thử độ khó cho model embedding
 ---
 
 ## Tự Đánh Giá
 
 | Tiêu chí | Loại | Điểm tự đánh giá |
 |----------|------|-------------------|
-| Warm-up | Cá nhân | / 5 |
-| Document selection | Nhóm | / 10 |
-| Chunking strategy | Nhóm | / 15 |
-| My approach | Cá nhân | / 10 |
-| Similarity predictions | Cá nhân | / 5 |
-| Results | Cá nhân | / 10 |
-| Core implementation (tests) | Cá nhân | / 30 |
-| Demo | Nhóm | / 5 |
-| **Tổng** | | **/ 100** |
+| Warm-up | Cá nhân | 4/ 5 |
+| Document selection | Nhóm | 10/ 10 |
+| Chunking strategy | Nhóm | 9/ 15 |
+| My approach | Cá nhân | 8/ 10 |
+| Similarity predictions | Cá nhân | 3/ 5 |
+| Results | Cá nhân | 8/ 10 |
+| Core implementation (tests) | Cá nhân |25 / 30 |
+| Demo | Nhóm | 4/ 5 |
+| **Tổng** | | **80/ 100** |

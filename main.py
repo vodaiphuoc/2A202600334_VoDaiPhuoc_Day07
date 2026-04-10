@@ -19,7 +19,7 @@ from src.embeddings import (
 )
 from src.models import Document
 from src.store import EmbeddingStore
-from src.chunking import SentenceChunker
+from src.chunking import SentenceChunker, ChunkingStrategyComparator
 
 MAX_SENTENCES_PER_CHUNK = 5
 
@@ -55,6 +55,17 @@ def load_documents_from_files(file_paths: list[str]) -> list[Document]:
             continue
 
         content = path.read_text(encoding="utf-8")
+        
+        if path.name == "team_selection_custom_data.txt":
+            compare_results = ChunkingStrategyComparator().compare(content)
+            filter_compare_results ={k:{
+                "count": v['count'],
+                "avg_length": v['avg_length'],
+                "max_chunk_length": v["max_chunk_length"],
+                "min_chunk_length": v['min_chunk_length'],
+            } for k, v in compare_results.items()}
+            print(filter_compare_results)
+
         for ith, chunk_str in enumerate(chunker.chunk(content)):
             # use uuid for global indexing for all chunks for all files
             # anh use chunk order in metadata
@@ -133,6 +144,7 @@ def run_manual_demo(question: str | None = None, sample_files: list[str] | None 
     # print(f"Question: {query}")
     # print("Agent answer:")
     # print(agent.answer(query, top_k=3))
+
     return 0
 
 # example user query

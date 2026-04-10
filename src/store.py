@@ -42,7 +42,9 @@ class EmbeddingStore:
                 "hnsw": { "space": "cosine" }
             })
             self._use_chroma = True
+
         except Exception:
+            print('fall back')
             self._use_chroma = False
             self._collection = None
 
@@ -159,7 +161,7 @@ class EmbeddingStore:
                 )
             
             output.sort(key=lambda x: x["score"], reverse=True)
-            return output
+            return output[:top_k]
 
         return self._search_records(query, self._store, top_k)
 
